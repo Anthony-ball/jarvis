@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jarvis">
+<title>Jarvis</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;600&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg: #000000;
+  --surface: #1c1c1e;
+  --surface2: #2c2c2e;
+  --border: rgba(255,255,255,0.1);
+  --accent: #0a84ff;
+  --accent2: #30d158;
+  --text: #ffffff;
+  --muted: rgba(255,255,255,0.5);
+  --danger: #ff453a;
+  --warn: #ffd60a;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, 'SF Pro Display', sans-serif;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Login Screen ── */
+#login-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  gap: 32px;
+}
+
+.login-logo {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #0a84ff, #30d158);
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+}
+
+.login-title {
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+
+.login-subtitle {
+  font-size: 15px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.login-input {
+  width: 100%;
+  max-width: 320px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 20px;
+  font-size: 17px;
+  color: var(--text);
+  text-align: center;
+  outline: none;
+  letter-spacing: 4px;
+}
+
+.login-input::placeholder { letter-spacing: 0; color: var(--muted); }
+
+.login-btn {
+  width: 100%;
+  max-width: 320px;
+  background: var(--accent);
+  border: none;
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 17px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.login-btn:active { opacity: 0.8; }
+.login-error { color: var(--danger); font-size: 14px; }
+
+/* ── Main App ── */
+#app { flex: 1; display: none; flex-direction: column; height: 100dvh; }
+
+/* Header */
+.header {
+  padding: 54px 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.header-left { display: flex; align-items: center; gap: 10px; }
+
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent2);
+  box-shadow: 0 0 8px var(--accent2);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.header-title { font-size: 17px; font-weight: 600; }
+.header-time { font-size: 13px; color: var(--muted); }
+
+.header-right { display: flex; gap: 12px; align-items: center; }
+
+.icon-btn {
+  width: 34px; height: 34px;
+  background: var(--surface);
+  border: none;
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+
+.icon-btn:active { transform: scale(0.9); }
+.icon-btn.danger { color: var(--danger); }
+
+/* Conversation */
+.conversation {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.message { display: flex; gap: 10px; animation: fadeUp 0.2s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+.message.user { flex-direction: row-reverse; }
+
+.msg-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.message.jarvis .msg-avatar { background: linear-gradient(135deg, #0a84ff, #30d158); }
+.message.user .msg-avatar { background: var(--surface2); }
+
+.msg-bubble {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.message.jarvis .msg-bubble {
+  background: var(--surface);
+  border-bottom-left-radius: 4px;
+  color: var(--text);
+}
+
+.message.user .msg-bubble {
+  background: var(--accent);
+  border-bottom-right-radius: 4px;
+  color: white;
+}
+
+.msg-time {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  padding: 0 4px;
+}
+
+.message.user .msg-time { text-align: right; }
+
+.msg-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.msg-tool-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(10,132,255,0.15);
+  color: var(--accent);
+  border: 1px solid rgba(10,132,255,0.3);
+}
+
+/* Thinking */
+.thinking-dots { display: flex; gap: 4px; padding: 4px 0; }
+.thinking-dots span {
+  width: 6px; height: 6px;
+  background: var(--muted);
+  border-radius: 50%;
+  animation: blink 1.2s infinite;
+}
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
+
+/* Input Area */
+.input-area {
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.input-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.input-box {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 10px 16px;
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+  resize: none;
+  max-height: 120px;
+  min-height: 42px;
+  font-family: inherit;
+  line-height: 1.4;
+  -webkit-appearance: none;
+}
+
+.input-box::placeholder { color: var(--muted); }
+
+.send-btn {
+  width: 42px; height: 42px;
+  background: var(--accent);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+
+.send-btn:active { transform: scale(0.9); }
+.send-btn:disabled { background: var(--surface2); opacity: 0.5; }
+
+.voice-btn {
+  width: 42px; height: 42px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+
+.voice-btn.recording {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: white;
+  animation: pulse 0.6s infinite;
+}
+
+.photo-btn {
+  width: 42px; height: 42px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Image preview */
+.image-preview {
+  display: none;
+  margin-bottom: 8px;
+  position: relative;
+  width: fit-content;
+}
+
+.image-preview img {
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.image-preview-remove {
+  position: absolute;
+  top: -6px; right: -6px;
+  width: 18px; height: 18px;
+  background: var(--danger);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Settings panel */
+#settings-panel {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+
+.settings-sheet {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  padding: 24px 20px calc(32px + env(safe-area-inset-bottom));
+}
+
+.settings-handle {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 24px;
+}
+
+.settings-title { font-size: 20px; font-weight: 600; margin-bottom: 24px; }
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-label { font-size: 15px; }
+.settings-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+.kill-btn {
+  width: 100%;
+  background: var(--danger);
+  border: none;
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 17px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  margin-top: 24px;
+}
+
+/* Memory count badge */
+.mem-badge {
+  background: var(--surface2);
+  border-radius: 99px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-logo">🤖</div>
+  <div>
+    <div class="login-title" style="text-align:center">Jarvis</div>
+    <div class="login-subtitle" style="margin-top:8px">Your personal AI assistant</div>
+  </div>
+  <input type="password" class="login-input" id="password-input" placeholder="Enter password" autocomplete="current-password">
+  <div class="login-error" id="login-error" style="display:none">Wrong password. Try again.</div>
+  <button class="login-btn" onclick="doLogin()">Unlock Jarvis</button>
+</div>
+
+<!-- Main App -->
+<div id="app">
+  <div class="header">
+    <div class="header-left">
+      <div class="status-dot" id="status-dot"></div>
+      <div class="header-title">Jarvis</div>
+    </div>
+    <div class="header-right">
+      <span class="header-time" id="header-time"></span>
+      <button class="icon-btn" onclick="toggleSettings()" title="Settings">⚙️</button>
+    </div>
+  </div>
+
+  <div class="conversation" id="conversation">
+    <div class="message jarvis">
+      <div class="msg-avatar">🤖</div>
+      <div>
+        <div class="msg-bubble">Hey Anthony! I'm Jarvis — your personal assistant. I'm connected to your Gmail and Apple Calendar. What do you need?</div>
+        <div class="msg-time">Now</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="image-preview" id="image-preview">
+      <img id="preview-img" src="" alt="preview">
+      <button class="image-preview-remove" onclick="removeImage()">✕</button>
+    </div>
+    <div class="input-row">
+      <button class="photo-btn" onclick="document.getElementById('photo-input').click()">📷</button>
+      <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
+      <textarea class="input-box" id="input" placeholder="Ask Jarvis anything..." rows="1"></textarea>
+      <button class="voice-btn" id="voice-btn" onclick="toggleVoice()">🎤</button>
+      <button class="send-btn" id="send-btn" onclick="sendMessage()">↑</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Panel -->
+<div id="settings-panel" onclick="closeSettings()">
+  <div class="settings-sheet" onclick="event.stopPropagation()">
+    <div class="settings-handle"></div>
+    <div class="settings-title">Settings</div>
+
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Memories</div>
+        <div class="settings-sub">Things Jarvis remembers about you</div>
+      </div>
+      <span class="mem-badge" id="mem-count">0</span>
+    </div>
+
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Voice responses</div>
+        <div class="settings-sub">Jarvis speaks his replies aloud</div>
+      </div>
+      <input type="checkbox" id="voice-toggle" checked style="width:20px;height:20px;cursor:pointer">
+    </div>
+
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Clear memories</div>
+        <div class="settings-sub">Reset everything Jarvis has learned</div>
+      </div>
+      <button onclick="clearMemories()" style="background:var(--surface2);border:none;border-radius:8px;padding:6px 12px;color:var(--danger);font-size:13px;cursor:pointer">Clear</button>
+    </div>
+
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Sign out</div>
+        <div class="settings-sub">Lock Jarvis with password</div>
+      </div>
+      <button onclick="doLogout()" style="background:var(--surface2);border:none;border-radius:8px;padding:6px 12px;color:var(--muted);font-size:13px;cursor:pointer">Sign out</button>
+    </div>
+
+    <button class="kill-btn" onclick="killJarvis()">🔴 Emergency Killswitch</button>
+  </div>
+</div>
+
+<script>
+// ── Config ──
+const API_BASE = window.location.origin;
+let sessionHistory = [];
+let pendingImage = null;
+let recognizing = false;
+
+// ── Clock ──
+function updateClock() {
+  document.getElementById('header-time').textContent =
+    new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+}
+setInterval(updateClock, 10000);
+updateClock();
+
+// ── Login ──
+document.getElementById('password-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+async function doLogin() {
+  const pw = document.getElementById('password-input').value;
+  const res = await fetch(`${API_BASE}/login`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    credentials: 'include',
+    body: JSON.stringify({password: pw})
+  });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    loadMemoryCount();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+async function doLogout() {
+  await fetch(`${API_BASE}/logout`, {method:'POST', credentials:'include'});
+  location.reload();
+}
+
+// ── Photo ──
+function handlePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const base64 = e.target.result.split(',')[1];
+    pendingImage = base64;
+    document.getElementById('preview-img').src = e.target.result;
+    document.getElementById('image-preview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage() {
+  pendingImage = null;
+  document.getElementById('image-preview').style.display = 'none';
+  document.getElementById('photo-input').value = '';
+}
+
+// ── Voice ──
+let recognition = null;
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.onresult = e => {
+    document.getElementById('input').value = e.results[0][0].transcript;
+    document.getElementById('voice-btn').classList.remove('recording');
+    recognizing = false;
+    sendMessage();
+  };
+  recognition.onend = () => {
+    document.getElementById('voice-btn').classList.remove('recording');
+    recognizing = false;
+  };
+}
+
+function toggleVoice() {
+  if (!recognition) { alert('Voice not supported in this browser. Use Safari on iPhone.'); return; }
+  if (recognizing) {
+    recognition.stop();
+  } else {
+    recognition.start();
+    document.getElementById('voice-btn').classList.add('recording');
+    recognizing = true;
+  }
+}
+
+function speak(text) {
+  if (!document.getElementById('voice-toggle').checked) return;
+  const clean = text.replace(/[*_`#]/g, '');
+  const u = new SpeechSynthesisUtterance(clean);
+  u.rate = 1.0;
+  u.pitch = 1.0;
+  window.speechSynthesis.speak(u);
+}
+
+// ── Chat ──
+const conv = document.getElementById('conversation');
+
+function addMessage(role, text, tools=[]) {
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+  const avatar = role === 'user' ? '👤' : '🤖';
+  const time = new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+  const toolsHtml = tools.map(t => `<span class="msg-tool-badge">⚡ ${t}</span>`).join('');
+  div.innerHTML = `
+    <div class="msg-avatar">${avatar}</div>
+    <div>
+      <div class="msg-bubble">${text.replace(/\n/g,'<br>')}</div>
+      ${tools.length ? `<div class="msg-tools">${toolsHtml}</div>` : ''}
+      <div class="msg-time">${time}</div>
+    </div>`;
+  conv.appendChild(div);
+  conv.scrollTop = conv.scrollHeight;
+}
+
+function showThinking() {
+  const div = document.createElement('div');
+  div.className = 'message jarvis';
+  div.id = 'thinking';
+  div.innerHTML = `<div class="msg-avatar">🤖</div>
+    <div><div class="msg-bubble"><div class="thinking-dots"><span></span><span></span><span></span></div></div></div>`;
+  conv.appendChild(div);
+  conv.scrollTop = conv.scrollHeight;
+}
+
+function hideThinking() {
+  const t = document.getElementById('thinking');
+  if (t) t.remove();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if (!text && !pendingImage) return;
+
+  const displayText = text || '📷 Image';
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('send-btn').disabled = true;
+
+  addMessage('user', displayText);
+  showThinking();
+
+  const imageToSend = pendingImage;
+  removeImage();
+
+  try {
+    const res = await fetch(`${API_BASE}/chat`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      credentials: 'include',
+      body: JSON.stringify({
+        message: text || 'What do you see in this image?',
+        history: sessionHistory.slice(-20),
+        image: imageToSend || null
+      })
+    });
+
+    const data = await res.json();
+    hideThinking();
+
+    if (data.error) {
+      addMessage('jarvis', `Error: ${data.error}`);
+    } else {
+      addMessage('jarvis', data.response, data.tools_used || []);
+      speak(data.response);
+      sessionHistory.push(
+        {role: 'user', content: text},
+        {role: 'assistant', content: data.response}
+      );
+      if (sessionHistory.length > 40) sessionHistory = sessionHistory.slice(-40);
+    }
+  } catch (err) {
+    hideThinking();
+    addMessage('jarvis', `Connection error: ${err.message}. Make sure the server is running.`);
+  }
+
+  document.getElementById('send-btn').disabled = false;
+  input.focus();
+}
+
+document.getElementById('input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+document.getElementById('input').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+// ── Settings ──
+function toggleSettings() {
+  document.getElementById('settings-panel').style.display = 'flex';
+  loadMemoryCount();
+}
+
+function closeSettings() {
+  document.getElementById('settings-panel').style.display = 'none';
+}
+
+async function loadMemoryCount() {
+  try {
+    const res = await fetch(`${API_BASE}/memories`, {credentials:'include'});
+    const data = await res.json();
+    document.getElementById('mem-count').textContent = (data.memories || []).length;
+  } catch {}
+}
+
+async function clearMemories() {
+  if (!confirm('Clear all memories? Jarvis will forget everything about you.')) return;
+  await fetch(`${API_BASE}/memories`, {method:'DELETE', credentials:'include'});
+  addMessage('jarvis', "I've cleared all my memories. Fresh start!");
+  closeSettings();
+}
+
+async function killJarvis() {
+  if (!confirm('EMERGENCY KILLSWITCH: This will immediately disable Jarvis. Are you sure?')) return;
+  await fetch(`${API_BASE}/killswitch`, {method:'POST', credentials:'include'});
+  alert('Jarvis has been disabled. Contact your server admin to re-enable.');
+  closeSettings();
+}
+</script>
+</body>
+</html>
