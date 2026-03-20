@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Jarvis">
@@ -77,8 +77,12 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sa
 .thinking-dots span:nth-child(2){animation-delay:.2s}
 .thinking-dots span:nth-child(3){animation-delay:.4s}
 @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
-/* Input sits above the bottom nav */
+/* Input sits above the bottom nav — does NOT ride up with keyboard */
 .input-area{position:fixed;bottom:calc(58px + env(safe-area-inset-bottom));left:0;right:0;padding:10px 16px;background:var(--bg);border-top:1px solid var(--border);z-index:40}
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari: prevent input from riding up with keyboard */
+  .input-area{position:fixed;bottom:calc(58px + env(safe-area-inset-bottom));transform:translateZ(0);-webkit-transform:translateZ(0);}
+}
 .input-row{display:flex;gap:8px;align-items:flex-end}
 .input-box{flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:22px;padding:10px 16px;font-size:15px;color:var(--text);outline:none;resize:none;max-height:100px;min-height:42px;font-family:inherit;line-height:1.4;-webkit-appearance:none}
 .input-box::placeholder{color:var(--muted)}
@@ -504,6 +508,7 @@ async function sendMessage() {
   const text = input.value.trim();
   if(!text && !pendingImage) return;
   input.value=''; input.style.height='auto';
+  input.blur(); // dismiss keyboard on mobile
   document.getElementById('send-btn').disabled=true;
   // Make sure we're on chat tab when sending
   switchPage('chat');
