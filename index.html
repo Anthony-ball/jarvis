@@ -443,9 +443,31 @@ async function doLogin() {
   try {
     const res = await fetch(`${API_BASE}/login`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({password:pw})});
     const data = await res.json();
-    if(data.success) { document.getElementById('login-screen').style.display='none'; document.getElementById('app').style.display='flex'; init(); }
-    else { document.getElementById('login-error').style.display='block'; }
-  } catch(e) { document.getElementById('login-error').style.display='block'; document.getElementById('login-error').textContent='Connection error.'; }
+    if(data.success) {
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('app').style.display='flex';
+      init();
+      loadBriefing();
+    } else {
+      document.getElementById('login-error').style.display='block';
+    }
+  } catch(e) {
+    document.getElementById('login-error').style.display='block';
+    document.getElementById('login-error').textContent='Connection error.';
+  }
+}
+
+async function loadBriefing() {
+  try {
+    const res = await fetch(`${API_BASE}/briefing`, {credentials:'include'});
+    const data = await res.json();
+    if(data.message) {
+      const conv = document.getElementById('conversation');
+      conv.innerHTML = '';
+      addMessage('jarvis', data.message);
+      speak(data.message);
+    }
+  } catch(e) {}
 }
 
 async function doLogout() { await fetch(`${API_BASE}/logout`,{method:'POST',credentials:'include'}); location.reload(); }
