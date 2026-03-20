@@ -29,9 +29,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sa
 .greeting{font-size:22px;font-weight:600;letter-spacing:-.3px}
 .header-sub{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center;margin-top:2px}
 .icon-btn{width:36px;height:36px;background:var(--surface);border:1px solid var(--border);border-radius:50%;color:var(--muted);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.scrollable{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px;scrollbar-width:none}
+.scrollable{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:140px;scrollbar-width:none}
 .scrollable::-webkit-scrollbar{display:none}
-.tab-content{display:none;padding:16px 20px 100px}
+.tab-content{display:none;padding:16px 20px 20px}
 .tab-content.active{display:block}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px}
 .card-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
@@ -51,10 +51,12 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sa
 .checklist-label.done{color:var(--muted);text-decoration:line-through}
 .quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 .quick-btn{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;cursor:pointer;text-align:left;transition:all .15s}
-.quick-btn:active{transform:scale(.97)}
+.quick-btn:active{transform:scale(.97);background:var(--surface2)}
 .quick-btn-icon{font-size:20px;margin-bottom:6px}
 .quick-btn-label{font-size:13px;font-weight:500;color:var(--text)}
 .quick-btn-sub{font-size:11px;color:var(--muted);margin-top:2px}
+/* Subtle hint that these are prompts, not actions */
+.quick-btn::after{content:'Ask →';font-size:10px;color:var(--muted2);display:block;margin-top:4px}
 .bucket-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
 .bucket-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .bucket-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600}
@@ -75,8 +77,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sa
 .thinking-dots span:nth-child(2){animation-delay:.2s}
 .thinking-dots span:nth-child(3){animation-delay:.4s}
 @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
-.input-area{position:fixed;bottom:0;left:0;right:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--border);display:none}
-.input-area.visible{display:block}
+/* Input always visible at bottom */
+.input-area{position:fixed;bottom:0;left:0;right:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--border);z-index:40}
 .input-row{display:flex;gap:8px;align-items:flex-end}
 .input-box{flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:22px;padding:10px 16px;font-size:15px;color:var(--text);outline:none;resize:none;max-height:100px;min-height:42px;font-family:inherit;line-height:1.4;-webkit-appearance:none}
 .input-box::placeholder{color:var(--muted)}
@@ -93,7 +95,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sa
 .nav-icon{font-size:22px}
 .nav-label{font-size:10px;color:var(--muted);letter-spacing:.5px}
 .nav-item.active .nav-label{color:var(--accent)}
-.chat-messages{flex:1;overflow-y:auto;padding:16px 20px 80px;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.chat-messages{flex:1;overflow-y:auto;padding:16px 20px 20px;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .chat-messages::-webkit-scrollbar{display:none}
 #settings-panel{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;backdrop-filter:blur(4px);align-items:flex-end}
 #settings-panel.open{display:flex}
@@ -108,6 +110,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sa
 .toggle-knob{width:20px;height:20px;background:white;border-radius:50%;position:absolute;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
 .toggle.on .toggle-knob{transform:translateX(18px)}
 .kill-btn{width:100%;background:var(--red);border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:600;color:white;cursor:pointer;margin-top:20px;font-family:inherit}
+/* Prompt preview toast */
+.prompt-preview{position:fixed;bottom:130px;left:16px;right:16px;background:var(--surface2);border:1px solid var(--border2);border-radius:14px;padding:12px 16px;font-size:13px;color:var(--text);z-index:45;display:none;animation:fadeUp .2s ease}
+.prompt-preview.show{display:block}
+.prompt-preview-label{font-size:10px;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
 </style>
 </head>
 <body>
@@ -162,14 +168,14 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sa
         <div id="checklist-container"></div>
       </div>
 
-      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);padding:4px 0 8px">Quick Actions</div>
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);padding:4px 0 8px">Quick Actions — tap to ask Jarvis</div>
       <div class="quick-actions">
-        <div class="quick-btn" onclick="quickAsk('What does my day look like today? Give me a full rundown.')"><div class="quick-btn-icon">📅</div><div class="quick-btn-label">My Day</div><div class="quick-btn-sub">Full overview</div></div>
-        <div class="quick-btn" onclick="quickAsk('What messages and emails need my attention?')"><div class="quick-btn-icon">✉️</div><div class="quick-btn-label">Messages</div><div class="quick-btn-sub">Email + texts</div></div>
-        <div class="quick-btn" onclick="quickAsk('What are my Alabaster Pools stops today?')"><div class="quick-btn-icon">🏊</div><div class="quick-btn-label">Pool Route</div><div class="quick-btn-sub">Today's stops</div></div>
-        <div class="quick-btn" onclick="quickAsk('Help me with my Young Life ministry today.')"><div class="quick-btn-icon">✝️</div><div class="quick-btn-label">Ministry</div><div class="quick-btn-sub">Young Life</div></div>
-        <div class="quick-btn" onclick="quickAsk('Help me journal. Ask me reflective questions about today.')"><div class="quick-btn-icon">📓</div><div class="quick-btn-label">Journal</div><div class="quick-btn-sub">Guided reflection</div></div>
-        <div class="quick-btn" onclick="quickAsk('How am I doing on my soul care plan today?')"><div class="quick-btn-icon">🙏</div><div class="quick-btn-label">Soul Check</div><div class="quick-btn-sub">Rules of life</div></div>
+        <div class="quick-btn" onclick="loadPrompt('What does my day look like today? Give me a full rundown.')"><div class="quick-btn-icon">📅</div><div class="quick-btn-label">My Day</div><div class="quick-btn-sub">Full overview</div></div>
+        <div class="quick-btn" onclick="loadPrompt('What messages and emails need my attention?')"><div class="quick-btn-icon">✉️</div><div class="quick-btn-label">Messages</div><div class="quick-btn-sub">Email + texts</div></div>
+        <div class="quick-btn" onclick="loadPrompt('What are my Alabaster Pools stops today?')"><div class="quick-btn-icon">🏊</div><div class="quick-btn-label">Pool Route</div><div class="quick-btn-sub">Today's stops</div></div>
+        <div class="quick-btn" onclick="loadPrompt('Help me with my Young Life ministry today.')"><div class="quick-btn-icon">✝️</div><div class="quick-btn-label">Ministry</div><div class="quick-btn-sub">Young Life</div></div>
+        <div class="quick-btn" onclick="loadPrompt('Help me journal. Ask me reflective questions about today.')"><div class="quick-btn-icon">📓</div><div class="quick-btn-label">Journal</div><div class="quick-btn-sub">Guided reflection</div></div>
+        <div class="quick-btn" onclick="loadPrompt('How am I doing on my soul care plan today?')"><div class="quick-btn-icon">🙏</div><div class="quick-btn-label">Soul Check</div><div class="quick-btn-sub">Rules of life</div></div>
       </div>
     </div>
 
@@ -179,10 +185,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sa
         <div class="bucket-header"><div class="bucket-dot" style="background:var(--mission)"></div><div class="bucket-title" style="color:var(--mission)">Mission</div></div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Young Life · Bible Study · Spiritual Life</div>
         <div class="quick-actions" style="margin-bottom:0">
-          <div class="quick-btn" onclick="quickAsk('What Young Life events or follow-ups do I have?')"><div class="quick-btn-icon">⛺</div><div class="quick-btn-label">Young Life</div></div>
-          <div class="quick-btn" onclick="quickAsk('Help me prepare for my next Bible study.')"><div class="quick-btn-icon">📖</div><div class="quick-btn-label">Bible Study</div></div>
-          <div class="quick-btn" onclick="quickAsk('Who am I praying for this week?')"><div class="quick-btn-icon">🙏</div><div class="quick-btn-label">Prayer</div></div>
-          <div class="quick-btn" onclick="quickAsk('Help me reach out to a student I need to connect with.')"><div class="quick-btn-icon">👥</div><div class="quick-btn-label">Students</div></div>
+          <div class="quick-btn" onclick="loadPrompt('What Young Life events or follow-ups do I have?')"><div class="quick-btn-icon">⛺</div><div class="quick-btn-label">Young Life</div></div>
+          <div class="quick-btn" onclick="loadPrompt('Help me prepare for my next Bible study.')"><div class="quick-btn-icon">📖</div><div class="quick-btn-label">Bible Study</div></div>
+          <div class="quick-btn" onclick="loadPrompt('Who am I praying for this week?')"><div class="quick-btn-icon">🙏</div><div class="quick-btn-label">Prayer</div></div>
+          <div class="quick-btn" onclick="loadPrompt('Help me reach out to a student I need to connect with.')"><div class="quick-btn-icon">👥</div><div class="quick-btn-label">Students</div></div>
         </div>
       </div>
       <div class="card">
@@ -202,10 +208,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sa
         <div class="bucket-header"><div class="bucket-dot" style="background:var(--family)"></div><div class="bucket-title" style="color:var(--family)">Family</div></div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Ashlyn · Home · Relationships</div>
         <div class="quick-actions" style="margin-bottom:0">
-          <div class="quick-btn" onclick="quickAsk('What should I do to invest in Ashlyn today?')"><div class="quick-btn-icon">💛</div><div class="quick-btn-label">Ashlyn</div></div>
-          <div class="quick-btn" onclick="quickAsk('Help me plan a date night for Ashlyn and I.')"><div class="quick-btn-icon">🌙</div><div class="quick-btn-label">Date Night</div></div>
-          <div class="quick-btn" onclick="quickAsk('Who in my life needs encouragement or a check-in?')"><div class="quick-btn-icon">❤️</div><div class="quick-btn-label">Relationships</div></div>
-          <div class="quick-btn" onclick="quickAsk('What home tasks or projects need attention?')"><div class="quick-btn-icon">🏠</div><div class="quick-btn-label">Home</div></div>
+          <div class="quick-btn" onclick="loadPrompt('What should I do to invest in Ashlyn today?')"><div class="quick-btn-icon">💛</div><div class="quick-btn-label">Ashlyn</div></div>
+          <div class="quick-btn" onclick="loadPrompt('Help me plan a date night for Ashlyn and I.')"><div class="quick-btn-icon">🌙</div><div class="quick-btn-label">Date Night</div></div>
+          <div class="quick-btn" onclick="loadPrompt('Who in my life needs encouragement or a check-in?')"><div class="quick-btn-icon">❤️</div><div class="quick-btn-label">Relationships</div></div>
+          <div class="quick-btn" onclick="loadPrompt('What home tasks or projects need attention?')"><div class="quick-btn-icon">🏠</div><div class="quick-btn-label">Home</div></div>
         </div>
       </div>
     </div>
@@ -216,18 +222,18 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sa
         <div class="bucket-header"><div class="bucket-dot" style="background:var(--business)"></div><div class="bucket-title" style="color:var(--business)">Business</div></div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Alabaster Pools · Finances · Growth</div>
         <div class="quick-actions" style="margin-bottom:0">
-          <div class="quick-btn" onclick="quickAsk('What are my pool stops today and whats the best route?')"><div class="quick-btn-icon">🗺️</div><div class="quick-btn-label">Today's Route</div></div>
-          <div class="quick-btn" onclick="quickAsk('Which pool clients need follow-up?')"><div class="quick-btn-icon">📋</div><div class="quick-btn-label">Clients</div></div>
-          <div class="quick-btn" onclick="quickAsk('Draft a professional message to a pool client.')"><div class="quick-btn-icon">✍️</div><div class="quick-btn-label">Draft Message</div></div>
-          <div class="quick-btn" onclick="quickAsk('What should I do to grow Alabaster Pools this month?')"><div class="quick-btn-icon">📈</div><div class="quick-btn-label">Growth</div></div>
-          <div class="quick-btn" onclick="quickAsk('Help me with my 1982 VW Vanagon. What should I work on?')"><div class="quick-btn-icon">🚐</div><div class="quick-btn-label">Vanagon</div></div>
-          <div class="quick-btn" onclick="quickAsk('How are my finances looking and what should I prioritize?')"><div class="quick-btn-icon">💰</div><div class="quick-btn-label">Finances</div></div>
+          <div class="quick-btn" onclick="loadPrompt('What are my pool stops today and whats the best route?')"><div class="quick-btn-icon">🗺️</div><div class="quick-btn-label">Today's Route</div></div>
+          <div class="quick-btn" onclick="loadPrompt('Which pool clients need follow-up?')"><div class="quick-btn-icon">📋</div><div class="quick-btn-label">Clients</div></div>
+          <div class="quick-btn" onclick="loadPrompt('Draft a professional message to a pool client.')"><div class="quick-btn-icon">✍️</div><div class="quick-btn-label">Draft Message</div></div>
+          <div class="quick-btn" onclick="loadPrompt('What should I do to grow Alabaster Pools this month?')"><div class="quick-btn-icon">📈</div><div class="quick-btn-label">Growth</div></div>
+          <div class="quick-btn" onclick="loadPrompt('Help me with my 1982 VW Vanagon. What should I work on?')"><div class="quick-btn-icon">🚐</div><div class="quick-btn-label">Vanagon</div></div>
+          <div class="quick-btn" onclick="loadPrompt('How are my finances looking and what should I prioritize?')"><div class="quick-btn-icon">💰</div><div class="quick-btn-label">Finances</div></div>
         </div>
       </div>
     </div>
 
     <!-- CHAT -->
-    <div id="chat-page" class="tab-content" style="padding:0 0 140px">
+    <div id="chat-page" class="tab-content" style="padding:0 0 20px">
       <div class="chat-messages" id="conversation">
         <div class="message jarvis">
           <div class="msg-avatar">🤖</div>
@@ -238,6 +244,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sa
 
   </div>
 
+  <!-- Input always visible -->
   <div class="input-area" id="input-area">
     <div class="input-row">
       <button class="action-btn photo-btn" onclick="document.getElementById('photo-input').click()">📷</button>
@@ -307,6 +314,7 @@ function init() {
   buildChecklist();
   document.getElementById('chat-init-time').textContent = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
   if(localStorage.getItem('theme')==='light') { document.body.classList.add('light-mode'); document.getElementById('theme-btn').textContent='☀️'; document.getElementById('theme-toggle').classList.add('on'); }
+  loadVoices();
 }
 
 function loadScripture() {
@@ -370,8 +378,19 @@ function switchPage(page) {
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById(page+'-page').classList.add('active');
   document.getElementById('nav-'+page).classList.add('active');
-  document.getElementById('input-area').classList.toggle('visible', page==='chat');
   if(page==='chat') setTimeout(()=>{ document.getElementById('conversation').scrollTop=999999; },100);
+}
+
+// KEY FIX: loadPrompt fills the input box — does NOT auto-send
+// User sees what's about to be sent and taps ↑ themselves
+function loadPrompt(text) {
+  const input = document.getElementById('input');
+  input.value = text;
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 100) + 'px';
+  // Switch to chat tab so they can see input and send
+  switchPage('chat');
+  setTimeout(() => input.focus(), 150);
 }
 
 function toggleTheme() {
@@ -396,8 +415,6 @@ async function doLogin() {
 
 async function doLogout() { await fetch(`${API_BASE}/logout`,{method:'POST',credentials:'include'}); location.reload(); }
 
-function quickAsk(text) { switchPage('chat'); setTimeout(()=>{ document.getElementById('input').value=text; sendMessage(); },100); }
-
 const conv = document.getElementById('conversation');
 function addMessage(role,text,tools=[]) {
   const div = document.createElement('div'); div.className=`message ${role}`;
@@ -420,10 +437,34 @@ function showThinking() {
 
 function hideThinking() { const t=document.getElementById('thinking'); if(t)t.remove(); }
 
+// IMPROVED VOICE — picks best available male/deep voice
+let voices = [];
+function loadVoices() {
+  voices = window.speechSynthesis.getVoices();
+  if(!voices.length) window.speechSynthesis.onvoiceschanged = () => { voices = window.speechSynthesis.getVoices(); };
+}
+
+function getBestVoice() {
+  // Priority: deep male voices on iOS/Mac
+  const preferred = ['Daniel','Alex','Fred','Tom','Google UK English Male','Microsoft David','en-US-GuyNeural'];
+  for(const name of preferred) {
+    const v = voices.find(v => v.name.includes(name));
+    if(v) return v;
+  }
+  // Fallback: any English male-sounding voice
+  return voices.find(v => v.lang.startsWith('en') && (v.name.toLowerCase().includes('male') || v.name.includes('Daniel') || v.name.includes('Alex'))) || voices[0] || null;
+}
+
 function speak(text) {
   if(!document.getElementById('voice-toggle').classList.contains('on')) return;
-  const clean = text.replace(/[*_`#]/g,'').replace(/<[^>]*>/g,'');
-  const u = new SpeechSynthesisUtterance(clean); u.rate=1.0;
+  window.speechSynthesis.cancel();
+  const clean = text.replace(/[*_`#]/g,'').replace(/<[^>]*>/g,'').replace(/\s+/g,' ').trim();
+  const u = new SpeechSynthesisUtterance(clean);
+  u.rate = 0.95;   // slightly slower = more authoritative
+  u.pitch = 0.85;  // lower pitch = deeper voice
+  u.volume = 1.0;
+  const voice = getBestVoice();
+  if(voice) u.voice = voice;
   window.speechSynthesis.speak(u);
 }
 
@@ -433,6 +474,8 @@ async function sendMessage() {
   if(!text && !pendingImage) return;
   input.value=''; input.style.height='auto';
   document.getElementById('send-btn').disabled=true;
+  // Make sure we're on chat tab when sending
+  switchPage('chat');
   addMessage('user', text||'📷 Image');
   showThinking();
   const img = pendingImage; pendingImage=null;
