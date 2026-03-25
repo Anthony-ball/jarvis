@@ -469,6 +469,28 @@ def clear_memories():
 def index():
     return open("index.html").read()
 
+@app.route("/tts", methods=["POST"])
+def text_to_speech():
+    if not check_auth():
+        return jsonify({"error": "Not authenticated"}), 401
+    data = request.get_json()
+    text = data.get("text", "")
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+    try:
+        xi_key = os.getenv("ELEVENLABS_API_KEY")
+        voice_id = os.getenv("ELEVENLABS_VOICE_ID", "pNInz6obpgDQGcFmaJgB")
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+        headers = {"xi-api-key": xi_key, "Content-Type": "application/json"}
+        payload = json.dumps({"text": text, "model_id": "eleven_monolingual_v1", "voice_settings": {"stability": 0.5, "similarity_boost": 0.75}})
+        req = urllib.request.Request(url, data=payload.encode(), headers=headers)
+        with urllib.request.urlopen(req) as response:
+            audio_data = response.read()
+        import base64
+        audio_b64 = base64.b64encode(audio_data).decode()
+        return jsonify({"audio": audio_b64})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 if __name__ == "__main__":
     print("🤖 Jarvis is starting up...")
     print(f"🔒 Password protection: ON")
