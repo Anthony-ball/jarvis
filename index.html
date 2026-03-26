@@ -55,7 +55,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sa
 .quick-btn-icon{font-size:20px;margin-bottom:6px}
 .quick-btn-label{font-size:13px;font-weight:500;color:var(--text)}
 .quick-btn-sub{font-size:11px;color:var(--muted);margin-top:2px}
-/* Subtle hint that these are prompts, not actions */
 .quick-btn::after{content:'Ask →';font-size:10px;color:var(--muted2);display:block;margin-top:4px}
 .bucket-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
 .bucket-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
@@ -72,15 +71,19 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sa
 .message.user .msg-time{text-align:right}
 .msg-tools{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
 .msg-tool-badge{font-size:10px;padding:2px 8px;border-radius:99px;background:rgba(123,140,222,.1);color:var(--accent);border:1px solid rgba(123,140,222,.2)}
+/* Message action buttons (speak + copy) */
+.msg-actions{display:flex;gap:6px;margin-top:6px;padding:0 2px}
+.msg-action-btn{background:none;border:none;color:var(--muted2);font-size:14px;cursor:pointer;padding:2px 4px;border-radius:6px;transition:color .15s,background .15s;line-height:1}
+.msg-action-btn:hover{color:var(--text);background:var(--surface2)}
+.msg-action-btn.speaking{color:var(--accent)}
+.msg-action-btn.copied{color:var(--green)}
 .thinking-dots{display:flex;gap:4px;padding:4px 0;align-items:center}
 .thinking-dots span{width:6px;height:6px;background:var(--muted);border-radius:50%;animation:blink 1.2s infinite}
 .thinking-dots span:nth-child(2){animation-delay:.2s}
 .thinking-dots span:nth-child(3){animation-delay:.4s}
 @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
-/* Input sits above the bottom nav — does NOT ride up with keyboard */
 .input-area{position:fixed;bottom:calc(58px + env(safe-area-inset-bottom));left:0;right:0;padding:10px 16px;background:var(--bg);border-top:1px solid var(--border);z-index:40}
 @supports (-webkit-touch-callout: none) {
-  /* iOS Safari: prevent input from riding up with keyboard */
   .input-area{position:fixed;bottom:calc(58px + env(safe-area-inset-bottom));transform:translateZ(0);-webkit-transform:translateZ(0);}
 }
 .input-row{display:flex;gap:8px;align-items:flex-end}
@@ -114,10 +117,12 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sa
 .toggle-knob{width:20px;height:20px;background:white;border-radius:50%;position:absolute;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
 .toggle.on .toggle-knob{transform:translateX(18px)}
 .kill-btn{width:100%;background:var(--red);border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:600;color:white;cursor:pointer;margin-top:20px;font-family:inherit}
-/* Prompt preview toast */
 .prompt-preview{position:fixed;bottom:130px;left:16px;right:16px;background:var(--surface2);border:1px solid var(--border2);border-radius:14px;padding:12px 16px;font-size:13px;color:var(--text);z-index:45;display:none;animation:fadeUp .2s ease}
 .prompt-preview.show{display:block}
 .prompt-preview-label{font-size:10px;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+/* TTS loading indicator */
+.tts-loading{display:inline-block;width:10px;height:10px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;margin-left:4px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -297,7 +302,13 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sa
     <div class="settings-handle"></div>
     <div class="settings-title">Settings</div>
     <div class="settings-row"><div><div class="settings-label">Light mode</div><div class="settings-sub">Switch theme</div></div><div class="toggle" id="theme-toggle" onclick="toggleTheme()"><div class="toggle-knob"></div></div></div>
-    <div class="settings-row"><div><div class="settings-label">Voice responses</div></div><div class="toggle on" id="voice-toggle" onclick="this.classList.toggle('on')"><div class="toggle-knob"></div></div></div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Always speak responses</div>
+        <div class="settings-sub">Jarvis reads replies aloud via ElevenLabs</div>
+      </div>
+      <div class="toggle" id="voice-toggle" onclick="toggleAutoSpeak()"><div class="toggle-knob"></div></div>
+    </div>
     <div class="settings-row"><div><div class="settings-label">Clear memories</div></div><button onclick="clearMemories()" style="background:var(--surface2);border:none;border-radius:8px;padding:6px 14px;color:var(--red);font-size:13px;cursor:pointer;font-family:inherit">Clear</button></div>
     <div class="settings-row"><div><div class="settings-label">Sign out</div></div><button onclick="doLogout()" style="background:var(--surface2);border:none;border-radius:8px;padding:6px 14px;color:var(--muted);font-size:13px;cursor:pointer;font-family:inherit">Sign out</button></div>
     <button class="kill-btn" onclick="killJarvis()">🔴 Emergency Killswitch</button>
@@ -307,6 +318,15 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sa
 <script>
 const API_BASE = window.location.origin;
 let sessionHistory = [], pendingImage = null, recognizing = false;
+let currentAudio = null; // track playing audio so we can stop it
+
+// ── Auto-speak preference (persisted) ──
+let autoSpeak = localStorage.getItem('autoSpeak') === 'true';
+function toggleAutoSpeak() {
+  autoSpeak = !autoSpeak;
+  localStorage.setItem('autoSpeak', autoSpeak);
+  document.getElementById('voice-toggle').classList.toggle('on', autoSpeak);
+}
 
 const prayerSchedule = {1:['DeWayne','Wendy'],2:['Amelia','Ian'],3:['Max','Sydney'],4:['Jake','Jenna'],5:['Chris','Katie'],6:['Tara','Eric'],0:['Rest & Sabbath','']};
 const checklistItems = ['Morning prayer','Morning scripture','Read devotional','Take every thought captive','Update my list','Resist: seek Lord before searching'];
@@ -342,7 +362,8 @@ function init() {
   buildChecklist();
   document.getElementById('chat-init-time').textContent = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
   if(localStorage.getItem('theme')==='light') { document.body.classList.add('light-mode'); document.getElementById('theme-btn').textContent='☀️'; document.getElementById('theme-toggle').classList.add('on'); }
-  loadVoices();
+  // Restore auto-speak toggle state
+  document.getElementById('voice-toggle').classList.toggle('on', autoSpeak);
 }
 
 function loadScripture() {
@@ -375,7 +396,6 @@ async function loadUtmost() {
       }
     } catch(e) { continue; }
   }
-  // Fallback — show static encouragement so it never looks broken
   document.getElementById('utmost-title').textContent = 'My Utmost for His Highest';
   document.getElementById('utmost-text').textContent = '"The great need is not to do things, but to believe things." — Tap below to read today\'s devotional.';
 }
@@ -416,7 +436,6 @@ function switchPage(page) {
   if(page==='chat') setTimeout(()=>{ document.getElementById('conversation').scrollTop=999999; },100);
 }
 
-// KEY FIX: loadPrompt fills the input box — does NOT auto-send
 function loadPrompt(text) {
   switchPage('chat');
   setTimeout(() => {
@@ -465,7 +484,7 @@ async function loadBriefing() {
       const conv = document.getElementById('conversation');
       conv.innerHTML = '';
       addMessage('jarvis', data.message);
-      speak(data.message);
+      if(autoSpeak) speakWithElevenLabs(data.message);
     }
   } catch(e) {}
 }
@@ -473,16 +492,75 @@ async function loadBriefing() {
 async function doLogout() { await fetch(`${API_BASE}/logout`,{method:'POST',credentials:'include'}); location.reload(); }
 
 const conv = document.getElementById('conversation');
-function addMessage(role,text,tools=[]) {
+
+// ── ElevenLabs TTS ──
+async function speakWithElevenLabs(text, speakBtn) {
+  // Stop any currently playing audio
+  if(currentAudio) { currentAudio.pause(); currentAudio = null; }
+
+  const clean = text.replace(/[*_`#]/g,'').replace(/<[^>]*>/g,'').replace(/\s+/g,' ').trim();
+  // Truncate very long responses for TTS (first 800 chars)
+  const truncated = clean.length > 800 ? clean.substring(0, 800) + '...' : clean;
+
+  if(speakBtn) speakBtn.classList.add('speaking');
+
+  try {
+    const res = await fetch(`${API_BASE}/tts`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      credentials: 'include',
+      body: JSON.stringify({text: truncated})
+    });
+    const data = await res.json();
+    if(data.audio) {
+      const audio = new Audio('data:audio/mpeg;base64,' + data.audio);
+      currentAudio = audio;
+      audio.play();
+      audio.onended = () => { if(speakBtn) speakBtn.classList.remove('speaking'); currentAudio = null; };
+    } else {
+      if(speakBtn) speakBtn.classList.remove('speaking');
+    }
+  } catch(e) {
+    console.error('TTS error:', e);
+    if(speakBtn) speakBtn.classList.remove('speaking');
+  }
+}
+
+function addMessage(role, text, tools=[]) {
   const div = document.createElement('div'); div.className=`message ${role}`;
   const time = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
   const toolsHtml = tools.map(t=>`<span class="msg-tool-badge">⚡ ${t}</span>`).join('');
   const formatted = text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+
   if(role==='jarvis') {
-    div.innerHTML=`<div class="msg-avatar">🤖</div><div><div class="msg-bubble">${formatted}</div>${tools.length?`<div class="msg-tools">${toolsHtml}</div>`:''}<div class="msg-time">${time}</div></div>`;
+    div.innerHTML=`<div class="msg-avatar">🤖</div><div style="flex:1;min-width:0"><div class="msg-bubble">${formatted}</div>${tools.length?`<div class="msg-tools">${toolsHtml}</div>`:''}<div style="display:flex;align-items:center;gap:4px"><div class="msg-time">${time}</div><div class="msg-actions"><button class="msg-action-btn speak-btn" title="Speak">🔊</button><button class="msg-action-btn copy-btn" title="Copy">📋</button></div></div></div>`;
+
+    // Wire up speak button
+    const speakBtn = div.querySelector('.speak-btn');
+    speakBtn.addEventListener('click', () => {
+      if(speakBtn.classList.contains('speaking')) {
+        // Stop playback
+        if(currentAudio) { currentAudio.pause(); currentAudio = null; }
+        speakBtn.classList.remove('speaking');
+      } else {
+        speakWithElevenLabs(text, speakBtn);
+      }
+    });
+
+    // Wire up copy button
+    const copyBtn = div.querySelector('.copy-btn');
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.classList.add('copied');
+        copyBtn.textContent = '✅';
+        setTimeout(() => { copyBtn.classList.remove('copied'); copyBtn.textContent = '📋'; }, 1500);
+      });
+    });
+
   } else {
     div.innerHTML=`<div class="msg-avatar user-av">A</div><div><div class="msg-bubble">${text}</div><div class="msg-time">${time}</div></div>`;
   }
+
   conv.appendChild(div); conv.scrollTop=conv.scrollHeight;
 }
 
@@ -494,45 +572,13 @@ function showThinking() {
 
 function hideThinking() { const t=document.getElementById('thinking'); if(t)t.remove(); }
 
-// IMPROVED VOICE — picks best available male/deep voice
-let voices = [];
-function loadVoices() {
-  voices = window.speechSynthesis.getVoices();
-  if(!voices.length) window.speechSynthesis.onvoiceschanged = () => { voices = window.speechSynthesis.getVoices(); };
-}
-
-function getBestVoice() {
-  // Priority: deep male voices on iOS/Mac
-  const preferred = ['Daniel','Alex','Fred','Tom','Google UK English Male','Microsoft David','en-US-GuyNeural'];
-  for(const name of preferred) {
-    const v = voices.find(v => v.name.includes(name));
-    if(v) return v;
-  }
-  // Fallback: any English male-sounding voice
-  return voices.find(v => v.lang.startsWith('en') && (v.name.toLowerCase().includes('male') || v.name.includes('Daniel') || v.name.includes('Alex'))) || voices[0] || null;
-}
-
-function speak(text) {
-  if(!document.getElementById('voice-toggle').classList.contains('on')) return;
-  window.speechSynthesis.cancel();
-  const clean = text.replace(/[*_`#]/g,'').replace(/<[^>]*>/g,'').replace(/\s+/g,' ').trim();
-  const u = new SpeechSynthesisUtterance(clean);
-  u.rate = 0.95;   // slightly slower = more authoritative
-  u.pitch = 0.85;  // lower pitch = deeper voice
-  u.volume = 1.0;
-  const voice = getBestVoice();
-  if(voice) u.voice = voice;
-  window.speechSynthesis.speak(u);
-}
-
 async function sendMessage() {
   const input = document.getElementById('input');
   const text = input.value.trim();
   if(!text && !pendingImage) return;
   input.value=''; input.style.height='auto';
-  input.blur(); // dismiss keyboard on mobile
+  input.blur();
   document.getElementById('send-btn').disabled=true;
-  // Make sure we're on chat tab when sending
   switchPage('chat');
   addMessage('user', text||'📷 Image');
   showThinking();
@@ -544,7 +590,12 @@ async function sendMessage() {
     if(data.error) { addMessage('jarvis',`⚠️ ${data.error}`); }
     else {
       addMessage('jarvis',data.response,data.tools_used||[]);
-      speak(data.response);
+      // Auto-speak if enabled
+      if(autoSpeak) {
+        const lastMsg = conv.lastElementChild;
+        const speakBtn = lastMsg ? lastMsg.querySelector('.speak-btn') : null;
+        speakWithElevenLabs(data.response, speakBtn);
+      }
       sessionHistory.push({role:'user',content:text},{role:'assistant',content:data.response});
       if(sessionHistory.length>40) sessionHistory=sessionHistory.slice(-40);
     }
